@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj.DigitalInput;
 public class Robot extends IterativeRobot {
 	private DifferentialDrive spike;
 	private Joystick stick;
+	private Joystick Gantry;
 	Timer timer;
 	double turnSpeed = 0.46;
 	double linearSpeed = 0.5;
@@ -36,6 +37,7 @@ public class Robot extends IterativeRobot {
 	public void robotInit() {
 		spike = new DifferentialDrive(new Spark(0), new Spark(1));
 		stick = new Joystick(0);
+		gantry = new Joystick(1);
 		timer = new Timer();
 		drive = new Drive(spike, false);
 		teleopSpeed = 0.50;
@@ -51,45 +53,40 @@ public class Robot extends IterativeRobot {
 		bottomLimit = new DigitalInput(0);
 		topLimit = new DigitalInput (1);
 	}
-//	private void clawVerticalSafteyCheck() {
-//		if (topLimit){
-//		goUp = false;
-//		}
-//		else{
-//		goUp = true;
-//		}
-//		
-//		if(bottomLimit){
-//		goDown = false;
-//		}
-//		else{
-//		goDown = true;
-//		}
-//	}
-//	
+// 	private void clawVerticalSafteyCheck() {
+// 		if (topLimit){
+// 		goUp = false;
+// 		}
+// 		else{
+// 		goUp = true;
+// 		}
+		
+// 		if(bottomLimit){
+// 		goDown = false;
+// 		}
+// 		else{
+// 		goDown = true;
+// 		}
+// 	}
+	
 	private void upDown(double move){
 		verticalMotor.set(move);
-//		
-//		if (move > 0) {
-//		verticalMotor.set(move);
-//		System.out.println("Going up at a speed of");
-//			
-//    	}
-//		else if (move < 0){
-//		verticalMotor.set(move);
-//		System.out.println("Going down at a speed of" );
-//		}
-//		else{
-//		verticalMotor.set(0);	
-//		}
+		
+		if (move > 0 && !topLimit) {
+		verticalMotor.set(move);
+		System.out.println("Going up at a speed of" + move);
+			
+    	}
+		else if (move < 0 && !bottomLimit){
+		verticalMotor.set(move);
+		System.out.println("Going down at a speed of" + move);
+		}
+		else{
+		verticalMotor.set(0);	
+		}
 	}
 	
 
-//	private void clawVerticalSafteyCheck(DigitalInput topSwitch, DigitalInput bottomSwitch, CANTalon motor) {
-//		if(topswitch.get() || bottomswitch.get()) {
-//			motor.set(0.0);
-//			}
-//		}
 	
 	private void grab(double speed) {
 		clawMotor.set(-speed);
@@ -109,6 +106,7 @@ public class Robot extends IterativeRobot {
 	
 	@Override
 	public void autonomousPeriodic() {
+		clawVerticalSafteyCheck();
 		initialCubeDrop();
 //		clawVerticalSafteyCheck(bottomSwitch, topSwitch, verticalMotor);
 	}
@@ -145,23 +143,26 @@ public class Robot extends IterativeRobot {
 	
 	@Override
 	public void teleopPeriodic() {
-//		clawHeightSensor.readClawValues();
-//		if (stick.getRawButton(1)) {
-//			grab(0.3);
-//		}
-//		if (stick.getRawButton(2)) {
-//			grab(-0.3);
-//		}
-		if (stick.getRawButton(3)){
-	    	upDown(1.0);
+		clawVerticalSafteyCheck();
+		clawHeightSensor.readClawValues();
+		if (stick.getRawButton(1)) {
+			grab(0.3);
 		}
-		else if(stick.getRawButton(4)){
-    		upDown(-0.5);
+		if (stick.getRawButton(2)) {
+			grab(-0.3);
+		}
+		// Will provide a value between 0 and 1 above the midde and between 0 and -1 below it)
+		if (gantry.getRawAxis(2) > 512){
+	    	upDown((gantry.getRawAxis(2)/2)/512);
+		}
+		else if (gantry.getRawAxis(2) < 512){
+		upDown(gantry.getRawAxis(2)/512 - 1);
 		}
 		else {
-			upDown(0);
+		upDown(0);	
 		}
-	//		Speed gearing system to swap between precision speed and high speed when right bumper is pressed
+		
+//			Speed gearing system to swap between precision speed and high speed when right bumper is pressed
 		if (stick.getRawButton(6)) {
 			teleopSpeed = (teleopSpeed == 0.50) ? 1.0 : 0.65;
 		}
